@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37614.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simulador de troca de calor", "Simulador de troca de calor\Simulador de troca de calor.csproj", "{03D8A82F-F641-4CF4-AAD7-112DC464032D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{03D8A82F-F641-4CF4-AAD7-112DC464032D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03D8A82F-F641-4CF4-AAD7-112DC464032D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03D8A82F-F641-4CF4-AAD7-112DC464032D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03D8A82F-F641-4CF4-AAD7-112DC464032D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EDA84B8C-7BE2-4D2E-ABAA-5EA0F3404466}
+	EndGlobalSection
+EndGlobal

@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using SimuladorTrocaCalor;
 
 class Program
@@ -7,32 +7,28 @@ class Program
     {
         int tamanho = 5;
         double lado = 0.01; // m
-        var materialPadrao = Material.MateriaisDisponiveis[1]; // AlumÃ­nio
+        var materialPadrao = Material.MateriaisDisponiveis[1]; // Alumínio
         double tempPadrao = 20.0;
 
         var grid = new Grid(tamanho, lado, materialPadrao, tempPadrao);
 
-        // CondiÃ§Ãµes iniciais: um canto quente e o canto oposto frio
+        // Condições iniciais: um canto quente e o canto oposto frio
         grid.Corpos[0, 0].TemperaturaAtual = 100.0;
         grid.Corpos[tamanho - 1, tamanho - 1].TemperaturaAtual = 0.0;
 
         var motor = new MotorSimulacao(grid, passoDeTempo: 0.1); // segundos
 
-        int passos = 10000;
+        int passos = 200;
         for (int passo = 0; passo <= passos; passo++)
         {
-            if (passo % 1000 == 0)
+            if (passo % 20 == 0)
             {
                 Console.WriteLine($"Passo {passo}");
                 ImprimirGrid(grid);
-
-
             }
 
             motor.ExecutarPasso();
         }
-        Console.WriteLine("Resultado final:");
-        ImprimirGrid(grid);
     }
 
     static void ImprimirGrid(Grid grid)

@@ -82,10 +82,19 @@ namespace SimuladorTrocaCalor
 
         public Grid(int tamanho, double ladoPadrao, Material materialPadrao, double temperaturaInicialPadrao)
         {
+            if (tamanho <= 0) throw new ArgumentException("Tamanho deve ser >= 1", nameof(tamanho));
+            if (materialPadrao == null) throw new ArgumentNullException(nameof(materialPadrao));
+
             Tamanho = tamanho;
             Corpos = new Corpo[tamanho, tamanho];
 
-            // TODO: preencher a matriz criando um Corpo em cada posicao
+            for (int i = 0; i < Tamanho; i++)
+            {
+                for (int j = 0; j < Tamanho; j++)
+                {
+                    Corpos[i, j] = new Corpo(i, j, ladoPadrao, materialPadrao, temperaturaInicialPadrao);
+                }
+            }
         }
 
         public List<Corpo> ObterVizinhos(int linha, int coluna)

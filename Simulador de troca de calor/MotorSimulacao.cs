@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace SimuladorTrocaCalor
 {
-    // Propriedades físicas de um material (k, c, densidade)
+    // Propriedades físicas dos materiais (k, c, densidade) MATERIAIS
     public class Material
     {
         public string Nome { get; }
-        public double CondutividadeTermica { get; } // k, W/(m.K)
-        public double CalorEspecifico { get; }       // c, J/(kg.K)
-        public double Densidade { get; }             // rho, kg/m^3
+        public double CondutividadeTermica { get; } // k - W/(m.K)
+        public double CalorEspecifico { get; }       // c - J/(kg.K)
+        public double Densidade { get; }             // em kg/m3
 
         public Material(string nome, double k, double c, double densidade)
         {
@@ -19,8 +19,7 @@ namespace SimuladorTrocaCalor
             Densidade = densidade;
         }
 
-        // TODO: cadastrar pelo menos 8 materiais (cobre, aluminio, ferro, vidro,
-        // madeira, isopor, concreto, etc) pra usar no ComboBox da interface
+        // Matreiais cadastrados
         public static List<Material> MateriaisDisponiveis = new List<Material>
         {
                 new Material("Cobre", 385, 385, 8960),
@@ -34,13 +33,13 @@ namespace SimuladorTrocaCalor
         };
     }
 
-    // Um cubo da malha
+    // corpo da simulacao, com propriedades geometricas e termicas
     public class Corpo
     {
         public int Linha { get; }
         public int Coluna { get; }
         public double Lado { get; }
-        public Material Material { get; set; } // set publico pra poder trocar depois
+        public Material Material { get; set; } 
         public double TemperaturaAtual { get; set; }
 
         public Corpo(int linha, int coluna, double lado, Material material, double temperaturaInicial)
@@ -67,14 +66,13 @@ namespace SimuladorTrocaCalor
             return Material.Densidade * Volume();
         }
 
-        // Q = m . c . deltaT, com deltaT indo de 0K ate a temperatura atual
         public double CalorSensivel()
         {
             return Massa() * Material.CalorEspecifico * TemperaturaAtual;
         }
     }
 
-    // Matriz NxN de corpos
+    // Matriz DxD de corpos GRID
     public class Grid
     {
         public int Tamanho { get; }
@@ -96,7 +94,10 @@ namespace SimuladorTrocaCalor
                 }
             }
         }
-
+        public bool EhPosicaoValida(int linha, int coluna)
+        {
+            return linha >= 0 && linha < Tamanho && coluna >= 0 && coluna < Tamanho;
+        }
         public List<Corpo> ObterVizinhos(int linha, int coluna)
         {
             var vizinhos = new List<Corpo>();
@@ -117,25 +118,25 @@ namespace SimuladorTrocaCalor
             return vizinhos;
         }
 
-        // usados no ExecutarPasso pra nao contar o mesmo par duas vezes
-        public Corpo? ObterVizinhoDireita(int linha, int coluna)
+        // Utilizado no ExecutarPasso para calcular o fluxo de calor entre vizinhos
+        public Corpo ObterVizinhoDireita(int linha, int coluna)
         {
             if (coluna + 1 >= Tamanho) return null;
             return Corpos[linha, coluna + 1];
         }
 
-        public Corpo? ObterVizinhoBaixo(int linha, int coluna)
+        public Corpo ObterVizinhoBaixo(int linha, int coluna)
         {
             if (linha + 1 >= Tamanho) return null;
             return Corpos[linha + 1, coluna];
         }
     }
 
-    // Roda a simulacao passo a passo
+    // Roda a simulacao passo a passo O MOTOR DE SIMULACAO
     public class MotorSimulacao
     {
         public Grid Grid { get; }
-        public double PassoDeTempo { get; set; } // em segundos
+        public double PassoDeTempo { get; set; } 
 
         public MotorSimulacao(Grid grid, double passoDeTempo)
         {
@@ -143,10 +144,7 @@ namespace SimuladorTrocaCalor
             PassoDeTempo = passoDeTempo;
         }
 
-        // Lei de Fourier: q = k . A . deltaT
-        // deltaT = TempOrigem - TempDestino, entao o sinal do resultado ja
-        // indica o sentido do fluxo (nao precisa de if pra isso)
-        // usa o menor k quando os materiais sao diferentes
+
         private double CalcularFluxoDeCalor(Corpo origem, Corpo destino)
         {
             double k = Math.Min(origem.Material.CondutividadeTermica,
@@ -157,8 +155,7 @@ namespace SimuladorTrocaCalor
             return k * area * deltaT;
         }
 
-        // calcula todas as trocas primeiro (com base no estado atual) e so
-        // depois aplica, pra ordem de varredura da matriz nao interferir
+        // calcula todas as trocas 
         public void ExecutarPasso()
         {
             int n = Grid.Tamanho;
@@ -170,7 +167,7 @@ namespace SimuladorTrocaCalor
                 {
                     Corpo atual = Grid.Corpos[i, j];
 
-                    Corpo? vizinhoDireita = Grid.ObterVizinhoDireita(i, j);
+                    Corpo vizinhoDireita = Grid.ObterVizinhoDireita(i, j);
                     if (vizinhoDireita != null)
                     {
                         double q = CalcularFluxoDeCalor(atual, vizinhoDireita);
@@ -180,7 +177,7 @@ namespace SimuladorTrocaCalor
                         energiaAcumulada[i, j + 1] += energiaTrocada;
                     }
 
-                    Corpo? vizinhoBaixo = Grid.ObterVizinhoBaixo(i, j);
+                    Corpo vizinhoBaixo = Grid.ObterVizinhoBaixo(i, j);
                     if (vizinhoBaixo != null)
                     {
                         double q = CalcularFluxoDeCalor(atual, vizinhoBaixo);

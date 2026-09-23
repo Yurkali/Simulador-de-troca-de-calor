@@ -16,8 +16,7 @@ class Program
         grid.Corpos[0, 0].TemperaturaAtual = 100.0;
         grid.Corpos[tamanho - 1, tamanho - 1].TemperaturaAtual = 0.0;
 
-        var motor = new MotorSimulacao(grid, passoDeTempo: 0.1); // seg
-        grid.Corpos[0, 1].Material = Material.MateriaisDisponiveis[5];
+        var motor = new MotorSimulacao(grid, passoDeTempo: 0.1); // segundos
 
         int passos = 100;
         for (int passo = 0; passo <= passos; passo++)

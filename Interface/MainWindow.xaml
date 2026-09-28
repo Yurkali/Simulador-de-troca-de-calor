@@ -1,0 +1,51 @@
+﻿<Window x:Class="Interface.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Interface"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!--Coluna da esquerda para os controles-->
+            <ColumnDefinition Width="250"/>
+            <!--Coluna da direta para o restante do painel-->
+            <ColumnDefinition Width="18*"/>
+            <ColumnDefinition Width="7*"/>
+        </Grid.ColumnDefinitions>
+        <!--Area para a coluna 0-->
+        <StackPanel Grid.Column="0" Margin="10,10,10,10">
+            <!--Rotulos e camopos de texto aqui-->
+            <TextBlock Text="Configurações do Grid" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+            <!--Tamanho da matriz-->
+            <TextBlock Text="Tamanho (NxN)" Margin="0,5,0,2"/>
+            <TextBox x:Name="txtTamanho" Text="5"/>
+            <!--Lado do corpo (metros)-->
+            <TextBlock Text="Lado do Corpo (m):" Margin="0,5,0,2"/>
+            <TextBox x:Name="txtLado" Text="0.01"/>
+            <!--Temperatura Inicial-->
+            <TextBlock Text="Temp. Inicial (°C):" Margin="0,5,0,2"/>
+            <TextBox x:Name="txtTempInicial" Text="25"/>
+            <!--Tempo-->
+            <TextBlock Text="Passo de Tempo (s):" Margin="0,5,0,2"/>
+            <Button x:Name="btnPlayPause" Content="Play" Click="btnPlayPause_Click" />  
+            <TextBox x:Name="txtPassoTempo" Text="1.0"/>
+            <!--Material-->
+            <TextBlock Text="Material Padrão:" Margin="0,5,0,2"/>
+            <ComboBox x:Name="cmbMaterial" Margin="0,0,0,10"/>
+            <!--Botões-->
+            <Button x:Name="btnCriarGrid" Content="Criar / Resetar Grid" Padding="5" Margin="0,5,0,5" Click="btnCriarGrid_Click"/>
+            <Button x:Name="btnAvancarPasso" Content="Executar Passo ▶️" Padding="5" Margin="0,5,0,5" IsEnabled="False" Click="btnAvancarPasso_Click"/>
+            <!--Botão Play/Pause inserido para ligar/desligar a simulação automaticamente-->
+            <Button x:Name="btnPlayPause" Content="Play" Click="btnPlayPause_Click" Padding="5" Margin="0,5,0,5" IsEnabled="False"/>
+        </StackPanel>
+
+        <!--Area matriz-->
+        <Border Grid.Column="1" Margin="10,10,10,10" Background="#F0F0F0" Grid.ColumnSpan="2">
+            <!--o UniformGrid organiza os blocos do grid-->
+            <UniformGrid x:Name="gridMatrizVisual" Margin="10"/>
+
+        </Border>
+    </Grid>
+</Window>

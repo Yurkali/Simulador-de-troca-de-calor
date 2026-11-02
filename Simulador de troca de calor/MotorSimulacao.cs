@@ -1,37 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SimuladorTrocaCalor
 {
-    // Propriedades físicas dos materiais (k, c, densidade) MATERIAIS
-    public class Material
-    {
-        public string Nome { get; }
-        public double CondutividadeTermica { get; } // k - W/(m.K)
-        public double CalorEspecifico { get; }       // c - J/(kg.K)
-        public double Densidade { get; }             // em kg/m3
-
-        public Material(string nome, double k, double c, double densidade)
-        {
-            Nome = nome;
-            CondutividadeTermica = k;
-            CalorEspecifico = c;
-            Densidade = densidade;
-        }
-
-        // Matreiais cadastrados
-        public static List<Material> MateriaisDisponiveis = new List<Material>
-        {
-                new Material("Cobre", 385, 385, 8960),
-                new Material("Aluminio", 205, 900, 2700),
-                new Material("Ferro", 80, 450, 7870),
-                new Material("Vidro", 1.05, 840, 2500),
-                new Material("Madeira", 0.12, 1700, 600),
-                new Material("Isopor", 0.033, 1400, 30),
-                new Material("Concreto", 1.7, 880, 2400),
-                new Material("Aço", 50, 500, 7850)
-        };
-    }
+    // os materiais agora ficam em Materiais.cs, separados por classes (heranca)
 
     // corpo da simulacao, com propriedades geometricas e termicas
     public class Corpo
@@ -119,13 +92,13 @@ namespace SimuladorTrocaCalor
         }
 
         // Utilizado no ExecutarPasso para calcular o fluxo de calor entre vizinhos
-        public Corpo ObterVizinhoDireita(int linha, int coluna)
+        public Corpo? ObterVizinhoDireita(int linha, int coluna)
         {
             if (coluna + 1 >= Tamanho) return null;
             return Corpos[linha, coluna + 1];
         }
 
-        public Corpo ObterVizinhoBaixo(int linha, int coluna)
+        public Corpo? ObterVizinhoBaixo(int linha, int coluna)
         {
             if (linha + 1 >= Tamanho) return null;
             return Corpos[linha + 1, coluna];
@@ -136,7 +109,14 @@ namespace SimuladorTrocaCalor
     public class MotorSimulacao
     {
         public Grid Grid { get; }
-        public double PassoDeTempo { get; set; } 
+        public double PassoDeTempo { get; set; }
+
+        // false = processamento sequencial (versao da N1), true = paralelo (versao da N2)
+        public bool UsarParalelismo { get; set; }
+
+        // contadores usados para gravar cada interacao no banco e remontar a simulacao depois
+        public int NumeroInteracao { get; set; }   // quantos passos ja foram executados
+        public double TempoSimulado { get; set; }  // em segundos (NumeroInteracao * PassoDeTempo)
 
         public MotorSimulacao(Grid grid, double passoDeTempo)
         {
@@ -155,8 +135,32 @@ namespace SimuladorTrocaCalor
             return k * area * deltaT;
         }
 
-        // calcula todas as trocas 
+      
         public void ExecutarPasso()
+        {
+            
+            double passoMaximo = 0.05;
+            double tempoRestante = PassoDeTempo;
+
+            
+            while (tempoRestante > 0)
+            {
+                double dt = Math.Min(passoMaximo, tempoRestante);
+
+                if (UsarParalelismo)
+                    ExecutarSubPassoParalelo(dt);
+                else
+                    ExecutarSubPassoFisico(dt);
+
+                tempoRestante -= dt;
+            }
+
+            NumeroInteracao++;
+            TempoSimulado += PassoDeTempo;
+        }
+
+        // VERSAO SEQUENCIAL (N1): uma thread so varre a malha inteira
+        public void ExecutarSubPassoFisico(double dt)
         {
             int n = Grid.Tamanho;
             double[,] energiaAcumulada = new double[n, n];
@@ -167,21 +171,23 @@ namespace SimuladorTrocaCalor
                 {
                     Corpo atual = Grid.Corpos[i, j];
 
-                    Corpo vizinhoDireita = Grid.ObterVizinhoDireita(i, j);
+                    Corpo? vizinhoDireita = Grid.ObterVizinhoDireita(i, j);
                     if (vizinhoDireita != null)
                     {
                         double q = CalcularFluxoDeCalor(atual, vizinhoDireita);
-                        double energiaTrocada = q * PassoDeTempo;
+                        // energia = fluxo * tempo do SUB-passo (dt). Antes estava PassoDeTempo,
+                        // o que aplicava o passo inteiro em cada sub-passo e multiplicava a troca.
+                        double energiaTrocada = q * dt;
 
                         energiaAcumulada[i, j] -= energiaTrocada;
                         energiaAcumulada[i, j + 1] += energiaTrocada;
                     }
 
-                    Corpo vizinhoBaixo = Grid.ObterVizinhoBaixo(i, j);
+                    Corpo? vizinhoBaixo = Grid.ObterVizinhoBaixo(i, j);
                     if (vizinhoBaixo != null)
                     {
                         double q = CalcularFluxoDeCalor(atual, vizinhoBaixo);
-                        double energiaTrocada = q * PassoDeTempo;
+                        double energiaTrocada = q * dt;
 
                         energiaAcumulada[i, j] -= energiaTrocada;
                         energiaAcumulada[i + 1, j] += energiaTrocada;
@@ -193,13 +199,81 @@ namespace SimuladorTrocaCalor
             {
                 for (int j = 0; j < n; j++)
                 {
-                    Corpo corpo = Grid.Corpos[i, j];
-                    double deltaTemperatura = energiaAcumulada[i, j] /
-                        (corpo.Massa() * corpo.Material.CalorEspecifico);
-
-                    corpo.TemperaturaAtual += deltaTemperatura;
+                    AplicarEnergia(Grid.Corpos[i, j], energiaAcumulada[i, j]);
                 }
             }
+        }
+
+        // VERSAO PARALELA (N2): divide o trabalho entre os nucleos do processador com Parallel.For.
+        //
+        // O cuidado e evitar "condicao de corrida": duas threads somando na mesma posicao
+        // de energiaAcumulada ao mesmo tempo, o que perderia valores. Na versao sequencial cada
+        // corpo escreve em si e no vizinho da direita E de baixo; se cada thread pegasse uma linha,
+        // a thread da linha i escreveria na linha i+1, que e de outra thread.
+        //
+        // Solucao: separar a troca em duas fases independentes, cada uma sem conflito:
+        //   Fase A (horizontal): cada thread pega UMA LINHA e troca os pares (i,j)-(i,j+1).
+        //                        So escreve dentro da propria linha.
+        //   Fase B (vertical):   cada thread pega UMA COLUNA e troca os pares (i,j)-(i+1,j).
+        //                        So escreve dentro da propria coluna.
+        // O Parallel.For so retorna quando todas as threads terminam, entao a fase B
+        // nunca roda junto com a fase A. Assim nao precisa de lock e cada par continua
+        // sendo calculado uma unica vez (mesmo resultado da versao sequencial).
+        public void ExecutarSubPassoParalelo(double dt)
+        {
+            int n = Grid.Tamanho;
+            double[,] energiaAcumulada = new double[n, n];
+            Corpo[,] corpos = Grid.Corpos;
+
+            // Fase A: pares horizontais, uma linha por tarefa
+            Parallel.For(0, n, i =>
+            {
+                for (int j = 0; j < n - 1; j++)
+                {
+                    double energiaTrocada = CalcularFluxoDeCalor(corpos[i, j], corpos[i, j + 1]) * dt;
+                    energiaAcumulada[i, j] -= energiaTrocada;
+                    energiaAcumulada[i, j + 1] += energiaTrocada;
+                }
+            });
+
+            // Fase B: pares verticais (i,j)-(i+1,j). Cada tarefa pega a "faixa" das linhas i e i+1.
+            // Se rodasse todas as faixas juntas, a faixa 0-1 e a faixa 1-2 escreveriam ambas na linha 1.
+            // Por isso roda em duas rodadas: primeiro as faixas que comecam em linha PAR (0-1, 2-3, ...),
+            // depois as que comecam em linha IMPAR (1-2, 3-4, ...). Dentro de cada rodada nenhuma
+            // faixa encosta na outra.
+            // (Percorrer por linha em vez de por coluna tambem e melhor para o cache, porque
+            // o C# guarda a matriz [i, j] linha por linha na memoria.)
+            for (int paridade = 0; paridade < 2; paridade++)
+            {
+                int inicio = paridade;
+                int qtdFaixas = (n - 1 - inicio + 1) / 2; // quantas linhas i (com i+1 < n) tem essa paridade
+                Parallel.For(0, qtdFaixas, f =>
+                {
+                    int i = inicio + 2 * f;
+                    for (int j = 0; j < n; j++)
+                    {
+                        double energiaTrocada = CalcularFluxoDeCalor(corpos[i, j], corpos[i + 1, j]) * dt;
+                        energiaAcumulada[i, j] -= energiaTrocada;
+                        energiaAcumulada[i + 1, j] += energiaTrocada;
+                    }
+                });
+            }
+
+            // Fase de aplicacao: cada corpo so altera a propria temperatura,
+            // entao as linhas podem ser atualizadas em paralelo sem conflito
+            Parallel.For(0, n, i =>
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    AplicarEnergia(corpos[i, j], energiaAcumulada[i, j]);
+                }
+            });
+        }
+
+        // Q = m * c * dT  ->  dT = Q / (m * c)
+        private static void AplicarEnergia(Corpo corpo, double energia)
+        {
+            corpo.TemperaturaAtual += energia / (corpo.Massa() * corpo.Material.CalorEspecifico);
         }
     }
 }

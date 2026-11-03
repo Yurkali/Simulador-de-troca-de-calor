@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -40,6 +41,17 @@ namespace Interface
             cmbMaterial.SelectedIndex = 1;
         }
 
+        //Le um numero decimal digitado pelo usuario, aceitando "0.01" ou "0,01".
+        //Sem isso, no Windows em portugues o double.TryParse trata o ponto como separador
+        //de MILHAR: "0.01" virava 1 e "1.0" virava 10 (cubo de 1 m e passo de 10 s!).
+        //Por isso troca a virgula por ponto e le sempre no formato invariante (ponto decimal),
+        //sem permitir separador de milhar.
+        private static bool LerNumero(string texto, out double valor)
+        {
+            return double.TryParse(texto.Trim().Replace(',', '.'), NumberStyles.Float,
+                                   CultureInfo.InvariantCulture, out valor);
+        }
+
         //Botão de "Criar/Resetar Grid"
         private async void btnCriarGrid_Click(object sender, RoutedEventArgs e)
         {
@@ -51,7 +63,7 @@ namespace Interface
                 return;
             }
 
-            if (!double.TryParse(txtLado.Text, out double lado) || lado <= 0)
+            if (!LerNumero(txtLado.Text, out double lado) || lado <= 0)
             {
                 MessageBox.Show("Lado invalido. Digite um numero maior que zero.",
                                 "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -59,14 +71,14 @@ namespace Interface
             }
 
             //o usuario digita em Celsius, mas nao pode ser menor que o zero absoluto
-            if (!double.TryParse(txtTempInicial.Text, out double tempInicialCelsius) || tempInicialCelsius < -273.15)
+            if (!LerNumero(txtTempInicial.Text, out double tempInicialCelsius) || tempInicialCelsius < -273.15)
             {
                 MessageBox.Show("Temperatura inicial invalida. Digite um valor em Celsius (>= -273,15).",
                                 "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (!double.TryParse(txtPassoTempo.Text, out double passoTempo) || passoTempo <= 0)
+            if (!LerNumero(txtPassoTempo.Text, out double passoTempo) || passoTempo <= 0)
             {
                 MessageBox.Show("Passo de tempo invalido. Digite um numero maior que zero.",
                                 "Erro", MessageBoxButton.OK, MessageBoxImage.Error);

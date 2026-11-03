@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# string de conexao com a senha do MySQL (usar conexao.exemplo.txt como modelo)
+Interface/conexao.txt

@@ -135,14 +135,18 @@ namespace SimuladorTrocaCalor
             return k * area * deltaT;
         }
 
-      
+        // Executa UMA interacao, que dura PassoDeTempo segundos.
+        // O passo e dividido em sub-passos de no maximo 0,05 s. O calculo usa o fluxo do instante
+        // atual como se ele fosse constante durante o passo; com um passo grande (ex.: 1 s) isso
+        // pode trocar mais calor do que o corpo tem e a temperatura oscila ate "explodir".
+        // Com sub-passos pequenos a troca fica estavel mesmo em corpos pequenos, e a interface
+        // continua escolhendo o passo que quiser. Passo menor que 0,05 s roda um sub-passo so.
         public void ExecutarPasso()
         {
-            
             double passoMaximo = 0.05;
             double tempoRestante = PassoDeTempo;
 
-            
+            // ultimo sub-passo pode ser menor que 0,05 s (o que sobrar do passo)
             while (tempoRestante > 0)
             {
                 double dt = Math.Min(passoMaximo, tempoRestante);
@@ -211,14 +215,18 @@ namespace SimuladorTrocaCalor
         // corpo escreve em si e no vizinho da direita E de baixo; se cada thread pegasse uma linha,
         // a thread da linha i escreveria na linha i+1, que e de outra thread.
         //
-        // Solucao: separar a troca em duas fases independentes, cada uma sem conflito:
-        //   Fase A (horizontal): cada thread pega UMA LINHA e troca os pares (i,j)-(i,j+1).
+        // Solucao: separar a troca em tres fases, cada uma sem conflito:
+        //   Fase A (horizontal): cada tarefa pega UMA LINHA e troca os pares (i,j)-(i,j+1).
         //                        So escreve dentro da propria linha.
-        //   Fase B (vertical):   cada thread pega UMA COLUNA e troca os pares (i,j)-(i+1,j).
-        //                        So escreve dentro da propria coluna.
-        // O Parallel.For so retorna quando todas as threads terminam, entao a fase B
-        // nunca roda junto com a fase A. Assim nao precisa de lock e cada par continua
-        // sendo calculado uma unica vez (mesmo resultado da versao sequencial).
+        //   Fase B (vertical):   cada tarefa pega uma FAIXA de duas linhas (i e i+1) e troca os
+        //                        pares (i,j)-(i+1,j). Como a faixa escreve na linha de baixo, as
+        //                        faixas rodam em duas rodadas (comecando em linha par, depois
+        //                        em linha impar) para duas faixas nunca escreverem na mesma linha.
+        //   Fase C (aplicacao):  cada tarefa pega uma linha e so altera a temperatura dos
+        //                        proprios corpos.
+        // O Parallel.For so retorna quando todas as tarefas terminam, entao uma fase nunca roda
+        // junto com a outra. Assim nao precisa de lock e cada par continua sendo calculado uma
+        // unica vez (mesmo resultado da versao sequencial).
         public void ExecutarSubPassoParalelo(double dt)
         {
             int n = Grid.Tamanho;

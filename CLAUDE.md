@@ -34,9 +34,12 @@ Professor também pediu: materiais separados por classes (feito com herança em 
 7. `ExecutarPasso` divide o passo em sub-passos de 0,05 s; a energia usa o `dt` do sub-passo (bug antigo usava `PassoDeTempo`).
 8. Banco: interação 0 = estado inicial. Material de cada corpo é gravado em toda interação (pode mudar com clique).
 
-## Benchmark (i5-13420H, 4P+4E núcleos, 12 threads)
+## Benchmark
 
-Paralelo fica mais lento até ~50×50 (custo de dividir em threads > trabalho) e passa a ganhar a partir de ~100×100; ~1,8–1,9× em 400×400 e 800×800. Resultados idênticos entre os modos (diferença ≤ 1e-13 K).
+Paralelo fica mais lento até ~50×50 (custo de dividir em threads > trabalho) e passa a ganhar a partir de ~100×100. Resultados idênticos entre os modos (diferença ≤ 1e-13 K).
+
+- `Relatorio/resultado_benchmark.csv`: rodada de 09/11/2026 no PC com 16 threads lógicas. 0,83× em 50×50, 2,25× em 100×100, pico de 3,28× em 400×400, 1,70× em 800×800. É a que está no relatório N1 × N2.
+- `Relatorio/resultado_benchmark_1.csv` e `_2.csv`: rodadas anteriores no notebook i5-13420H (12 threads). 1,22× em 100×100 e 1,8–1,9× em 400×400 e 800×800.
 
 ## Teste manual
 

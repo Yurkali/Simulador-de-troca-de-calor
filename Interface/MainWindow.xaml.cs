@@ -114,6 +114,27 @@ namespace Interface
             await IniciarSimulacaoAsync(novoMotor, numSimulacaoExistente: null);
         }
 
+        //Botão direito num bloco: muda a temperatura dele para o valor do campo "Temp. do bloco".
+        //Serve para criar novas fontes de calor/frio no meio da simulacao.
+        private void BotaoGrid_ClickDireito(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (motor == null) return;
+
+            if (!LerNumero(txtTempBloco.Text, out double tempCelsius) || tempCelsius < -273.15)
+            {
+                MessageBox.Show("Temperatura do bloco invalida. Digite um valor em Celsius (>= -273,15).",
+                                "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var pos = (Tuple<int, int>)((Button)sender).Tag;
+
+            //o motor trabalha em Kelvin, entao converte antes de gravar no corpo
+            motor.Grid.Corpos[pos.Item1, pos.Item2].TemperaturaAtual = tempCelsius + 273.15;
+
+            AtualizarMatrizVisual();
+        }
+
         //Botão "Carregar": remonta uma simulacao gravada no banco e continua a partir dela
         private async void btnCarregar_Click(object sender, RoutedEventArgs e)
         {
@@ -172,6 +193,7 @@ namespace Interface
                         Tag = new Tuple<int, int>(i, j) //isso serve para guarda a linha e coluna
                     };
                     btn.Click += BotaoGrid_Click;
+                    btn.MouseRightButtonUp += BotaoGrid_ClickDireito;
 
                     botoesGrid[i, j] = btn;//adiciona o botão na matriz
                     gridMatrizVisual.Children.Add(btn);//adiciona na matriz visual
@@ -393,7 +415,13 @@ namespace Interface
 
                     //internamente continua em Kelvin, so converte pra Celsius na hora de mostrar (F1 mostra so 1 casa decimal)
                     double tempCelsius = temp - 273.15;
-                    botoesGrid[i, j].Content = $"{tempCelsius:F1} °C";
+                    Material mat = motor.Grid.Corpos[i, j].Material;
+
+                    //duas linhas: temperatura em cima, material embaixo
+                    botoesGrid[i, j].Content = $"{tempCelsius:F1} °C\n{mat.Nome}";
+
+                    //passando o mouse em cima mostra os detalhes completos
+                    botoesGrid[i, j].ToolTip = $"Bloco [{i},{j}]\nMaterial: {mat.Nome}\nTemperatura: {tempCelsius:F2} °C";
 
                     //essas duas linhas sãooque alteram a cor dos blocos
                     //agora a porcentagem e calculada dentro do intervalo real

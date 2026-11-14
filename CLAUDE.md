@@ -40,6 +40,8 @@ Paralelo fica mais lento até ~50×50 (custo de dividir em threads > trabalho) e
 
 - `Relatorio/resultado_benchmark.csv`: rodada de 09/11/2026 no PC com 16 threads lógicas. 0,83× em 50×50, 2,25× em 100×100, pico de 3,28× em 400×400, 1,70× em 800×800. É a que está no relatório N1 × N2.
 - `Relatorio/resultado_benchmark_1.csv` e `_2.csv`: rodadas anteriores no notebook i5-13420H (12 threads). 1,22× em 100×100 e 1,8–1,9× em 400×400 e 800×800.
+- Essas três rodadas usavam medições curtas (~50 ms, `4_000_000/(n*n)` passos) e variavam muito entre execuções (em 14/11 o 100×100 deu 1,25× numa e 0,67× na outra). Desde 14/11 o benchmark usa `40_000_000/(n*n)` passos (limitado a 100–200 000), e cada medição dura ~0,5–2 s.
+- `Relatorio/resultado_benchmark_notebook_longo_1.csv` e `_2.csv`: notebook i5-13420H, 14/11/2026, medição longa, na tomada. 0,91–0,98× em 50×50, 1,5–1,6× em 100×100, 2,35–2,82× em 400×400, 3,0–3,4× em 800×800.
 
 ## Teste manual
 

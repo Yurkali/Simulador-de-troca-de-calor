@@ -82,9 +82,11 @@ static class Benchmark
 
         foreach (int n in Tamanhos)
         {
-            // passos suficientes para cada medicao demorar um tempo mensuravel,
-            // mas sem demorar demais nas malhas grandes
-            int passos = Math.Clamp(4_000_000 / (n * n), 10, 20_000);
+            // passos suficientes para cada medicao demorar em torno de 0,5 a 1 s.
+            // Com medicoes curtas (~50 ms) qualquer coisa rodando no PC, ou o Windows trocando
+            // a thread entre nucleos rapidos (P) e economicos (E), mudava muito o resultado
+            // de uma rodada para outra. Medindo mais tempo esse ruido fica pequeno.
+            int passos = Math.Clamp(40_000_000 / (n * n), 100, 200_000);
 
             // aquecimento: a 1a execucao inclui compilacao JIT e criacao das threads do pool
             Rodar(n, passos / 10 + 1, paralelo: false, out _);
